@@ -125,6 +125,8 @@
     </div>
   </div>
 
+  <button class="main-btn" id="mainBtn" onclick="toggleTimer()">▶ すたーと</button>
+
   <div class="exercise-part" id="exercisePart">じゅんび</div>
   <div class="exercise-name" id="exerciseName">からだをほぐそう！</div>
   <div class="pose-wrap"><div id="poseIllustration"></div></div>
@@ -136,7 +138,6 @@
   </div>
 
   <div class="exercise-list" id="exerciseList"></div>
-  <button class="main-btn" id="mainBtn" onclick="toggleTimer()">▶ すたーと</button>
 </div>
 
 <script>
@@ -378,6 +379,50 @@ const svgs = {
     <text x="65" y="128" text-anchor="middle" fill="#ffd700" font-size="9" font-weight="bold">おきあがれ！ふっきん！</text>
   </svg>`,
 
+  tanuki: `<svg viewBox="0 0 130 125" width="118" height="114" xmlns="http://www.w3.org/2000/svg">
+    <!-- 地面 -->
+    <line x1="5" y1="115" x2="125" y2="115" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <!-- からだ（しこだち！） -->
+    <ellipse cx="65" cy="85" rx="28" ry="22" fill="#8b6340" stroke="#5c3e20" stroke-width="2"/>
+    <!-- おなか -->
+    <ellipse cx="65" cy="88" rx="18" ry="14" fill="#c8a070"/>
+    <!-- あたま -->
+    <circle cx="65" cy="55" r="24" fill="#8b6340" stroke="#5c3e20" stroke-width="2"/>
+    <!-- タヌキのおめん（くろいめのまわり） -->
+    <ellipse cx="54" cy="53" rx="10" ry="8" fill="#333" opacity="0.7"/>
+    <ellipse cx="76" cy="53" rx="10" ry="8" fill="#333" opacity="0.7"/>
+    <!-- みみ（まるい） -->
+    <circle cx="47" cy="36" r="10" fill="#8b6340" stroke="#5c3e20" stroke-width="2"/>
+    <circle cx="47" cy="36" r="5" fill="#c8a070"/>
+    <circle cx="83" cy="36" r="10" fill="#8b6340" stroke="#5c3e20" stroke-width="2"/>
+    <circle cx="83" cy="36" r="5" fill="#c8a070"/>
+    <!-- め -->
+    <circle cx="54" cy="53" r="5" fill="#fff"/>
+    <circle cx="76" cy="53" r="5" fill="#fff"/>
+    <circle cx="55" cy="53" r="3" fill="#222"/>
+    <circle cx="77" cy="53" r="3" fill="#222"/>
+    <circle cx="56" cy="52" r="1" fill="#fff"/>
+    <circle cx="78" cy="52" r="1" fill="#fff"/>
+    <!-- はな -->
+    <ellipse cx="65" cy="60" rx="4" ry="3" fill="#5c3e20"/>
+    <!-- くち（にやり） -->
+    <path d="M59 65 Q65 71 71 65" fill="none" stroke="#5c3e20" stroke-width="2" stroke-linecap="round"/>
+    <!-- うで（ひざにて） -->
+    <line x1="38" y1="80" x2="22" y2="95" stroke="#5c3e20" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="20" cy="96" r="7" fill="#8b6340" stroke="#5c3e20" stroke-width="1.5"/>
+    <line x1="92" y1="80" x2="108" y2="95" stroke="#5c3e20" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="110" cy="96" r="7" fill="#8b6340" stroke="#5c3e20" stroke-width="1.5"/>
+    <!-- あし（しこだち！おおきくひらく） -->
+    <line x1="45" y1="102" x2="20" y2="115" stroke="#5c3e20" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="17" cy="115" rx="10" ry="6" fill="#8b6340" stroke="#5c3e20" stroke-width="1.5"/>
+    <line x1="85" y1="102" x2="110" y2="115" stroke="#5c3e20" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="113" cy="115" rx="10" ry="6" fill="#8b6340" stroke="#5c3e20" stroke-width="1.5"/>
+    <!-- 矢印（ひざをひらく） -->
+    <line x1="20" y1="105" x2="8" y2="110" stroke="#ffd700" stroke-width="2" stroke-linecap="round"/>
+    <line x1="110" y1="105" x2="122" y2="110" stroke="#ffd700" stroke-width="2" stroke-linecap="round"/>
+    <text x="65" y="125" text-anchor="middle" fill="#ffd700" font-size="9" font-weight="bold">しこだちキープ！12びょう！</text>
+  </svg>`,
+
   catBridge: `<svg viewBox="0 0 160 95" width="145" height="86" xmlns="http://www.w3.org/2000/svg">
     <line x1="5" y1="82" x2="155" y2="82" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
     <path d="M25 80 Q45 36 80 28 Q115 36 135 80 Z" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
@@ -403,9 +448,12 @@ const svgs = {
 
 // ===== 種目データ (合計194秒) =====
 const exercises = [
-  { part:'じゅんび（0〜18）', name:'からだをほぐそう！',
+  { part:'じゅんび（0〜6）', name:'からだをほぐそう！',
     tip:'うでをおおきくまわして\nからだをほぐそう！',
-    duration:18, color:'#00d4aa', svg:svgs.rabbit },
+    duration:6, color:'#00d4aa', svg:svgs.rabbit },
+  { part:'うでたてふせ（6〜18）', name:'うでたてふせ',
+    tip:'からだをまっすぐに！\nうでをまげてのばす！',
+    duration:12, color:'#ff6b9d', svg:svgs.bear },
   { part:'🔥プランク（18〜43）', name:'ひじプランク',
     tip:'おなかをかたくして！\nおしりをあげないよ！',
     duration:25, color:'#ff8c42', svg:svgs.cat },
@@ -415,9 +463,9 @@ const exercises = [
   { part:'キック（67〜94）', name:'スクワットキック',
     tip:'しゃがんでたって\nキック！15かい！',
     duration:27, color:'#4caf50', svg:svgs.frog },
-  { part:'じゅんび（94〜106）', name:'はいきん・ふっきんのじゅんび',
-    tip:'まっすぐたって\nからだをのばそう！',
-    duration:12, color:'#9c27b0', svg:svgs.pandaPrep },
+  { part:'🥋しこだち（94〜106）', name:'しこだちキープ！',
+    tip:'ひざをおおきくひらいて\nしこだちで12びょうキープ！',
+    duration:12, color:'#e91e63', svg:svgs.tanuki },
   { part:'🔥はいきん（106〜134）', name:'はいきん',
     tip:'うつぶせで\nゆっくりうえをむく！',
     duration:28, color:'#2196f3', svg:svgs.pandaBack },
@@ -428,7 +476,7 @@ const exercises = [
     tip:'あおむけでひざをまげて\nおしりをうえにあげる！',
     duration:15, color:'#ffd700', svg:svgs.catBridge },
 ];
-// 合計: 18+25+24+27+12+28+24+15 = 173秒 ✓
+// 合計: 6+12+25+24+27+12+28+24+15 = 173秒 ✓
 
 const TOTAL_SONG = 173;
 const CIRCUMFERENCE = 503;
