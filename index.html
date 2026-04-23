@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>カリスマックス × からておけいこ タイマー</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#c8a000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="カリスマックス">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#1a0a2e; color:#fff; font-family:'Noto Sans JP',sans-serif; min-height:100vh; display:flex; flex-direction:column; align-items:center; overflow-x:hidden; }
+    .bg-glow { position:fixed; inset:0; z-index:0; background:radial-gradient(ellipse at 50% 30%,rgba(200,160,0,0.15),transparent 70%); transition:background 1s; }
+    .bg-glow.active { background:radial-gradient(ellipse at 50% 30%,rgba(255,107,157,0.2),transparent 70%); }
+    .bg-glow.rest { background:radial-gradient(ellipse at 50% 30%,rgba(0,212,170,0.15),transparent 70%); }
+    .bg-glow.finish { background:radial-gradient(ellipse at 50% 30%,rgba(200,160,0,0.3),transparent 70%); }
+    .flash { position:fixed; inset:0; z-index:50; pointer-events:none; opacity:0; }
+    .flash.go { animation:flashAnim 0.35s ease-out; }
+    @keyframes flashAnim { 0%{opacity:0.6;background:#fff} 100%{opacity:0} }
+    .title-bar { position:relative; z-index:10; width:100%; max-width:480px; display:flex; justify-content:space-between; align-items:center; padding:14px 16px 8px; }
+    .title-text { font-size:14px; font-weight:900; letter-spacing:1px; color:#ffd700; }
+    .title-right { display:flex; gap:8px; align-items:center; }
+    .qr-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#fff; border-radius:50px; padding:6px 12px; font-size:16px; cursor:pointer; font-family:inherit; }
+    .qr-modal { position:fixed; inset:0; background:rgba(0,0,0,0.88); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:200; gap:20px; }
+    .qr-modal.hidden { display:none; }
+    .qr-box { background:#fff; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .qr-url { font-size:12px; font-weight:700; color:#111; text-align:center; }
+    .qr-hint { font-size:12px; color:#666; text-align:center; line-height:1.6; }
+    .qr-close { padding:12px 40px; border-radius:50px; background:#c8a000; color:#fff; border:none; font-size:16px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .main { position:relative; z-index:10; width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; padding:0 16px 20px; gap:14px; }
+    .song-progress-wrap { width:100%; }
+    .song-progress-label { display:flex; justify-content:space-between; font-size:11px; color:#888; margin-bottom:5px; }
+    .song-progress-bar { width:100%; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+    .song-progress-fill { height:100%; background:linear-gradient(90deg,#c8a000,#ffd700); border-radius:2px; width:0%; transition:width 0.3s linear; }
+    .circle-wrap { position:relative; width:180px; height:180px; }
+    .circle-svg { transform:rotate(-90deg); width:180px; height:180px; }
+    .circle-track { fill:none; stroke:rgba(255,255,255,0.07); stroke-width:10; }
+    .circle-progress { fill:none; stroke:#ffd700; stroke-width:10; stroke-linecap:round; stroke-dasharray:503; stroke-dashoffset:0; transition:stroke-dashoffset 0.9s linear,stroke 0.5s; }
+    .circle-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .time-display { font-size:52px; font-weight:900; line-height:1; color:#fff; }
+    .time-label { font-size:11px; color:#888; margin-top:2px; }
+    .exercise-part { font-size:11px; color:#ffd700; font-weight:700; letter-spacing:2px; }
+    .exercise-name { font-size:26px; font-weight:900; text-align:center; line-height:1.2; }
+    .exercise-tip { font-size:13px; color:rgba(255,255,255,0.65); text-align:center; line-height:1.6; min-height:40px; }
+    .pose-wrap { width:100%; background:rgba(255,255,255,0.04); border-radius:16px; padding:16px; display:flex; justify-content:center; align-items:center; min-height:120px; }
+    .next-wrap { width:100%; background:rgba(255,255,255,0.04); border-radius:12px; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; }
+    .next-label { font-size:11px; color:#888; }
+    .next-name { font-size:14px; font-weight:700; color:#fff; }
+    .exercise-list { width:100%; display:flex; flex-direction:column; gap:3px; }
+    .ex-item { display:flex; align-items:center; gap:8px; padding:5px 10px; border-radius:8px; font-size:12px; opacity:0.45; transition:opacity 0.3s,background 0.3s; }
+    .ex-item.done { opacity:0.25; text-decoration:line-through; }
+    .ex-item.current { opacity:1; background:rgba(255,255,255,0.07); font-weight:700; }
+    .ex-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .main-btn { width:100%; max-width:280px; padding:16px; border-radius:50px; background:linear-gradient(135deg,#c8a000,#ffd700); color:#1a0a2e; border:none; font-size:18px; font-weight:900; cursor:pointer; font-family:inherit; box-shadow:0 4px 20px rgba(200,160,0,0.4); transition:transform 0.1s; letter-spacing:2px; }
+    .main-btn:active { transform:scale(0.97); }
+    .countdown-overlay { position:fixed; inset:0; z-index:100; background:rgba(26,10,46,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; }
+    .countdown-overlay.hidden { display:none; }
+    .countdown-text { font-size:18px; color:#ffd700; font-weight:700; }
+    .countdown-num { font-size:120px; font-weight:900; color:#fff; animation:countPop 1s ease; }
+    @keyframes countPop { 0%{transform:scale(1.5);opacity:0} 50%{transform:scale(0.95)} 100%{transform:scale(1);opacity:1} }
+    .finish-screen { position:fixed; inset:0; z-index:90; background:linear-gradient(135deg,#1a0a2e,#2d1a00); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:40px; opacity:0; pointer-events:none; transition:opacity 0.5s; }
+    .finish-screen.show { opacity:1; pointer-events:auto; }
+    .finish-emoji { font-size:80px; }
+    .finish-title { font-size:32px; font-weight:900; color:#ffd700; text-align:center; }
+    .finish-msg { font-size:16px; color:rgba(255,255,255,0.75); text-align:center; line-height:1.8; }
+    .finish-btn { padding:14px 40px; border-radius:50px; background:linear-gradient(135deg,#c8a000,#ffd700); color:#1a0a2e; border:none; font-size:16px; font-weight:900; cursor:pointer; font-family:inherit; }
+    #yt-container { position:fixed; top:-9999px; left:-9999px; width:1px; height:1px; }
+    @media(max-width:380px){ .exercise-name{font-size:22px} .time-display{font-size:44px} .main-btn{font-size:16px} }
+  </style>
+</head>
+<body>
+<div class="bg-glow" id="bgGlow"></div>
+<div class="flash" id="flash"></div>
+<div id="yt-container"></div>
+
+<div class="qr-modal hidden" id="qrModal">
+  <div class="qr-box">
+    <div class="qr-url" id="qrUrlText"></div>
+    <div id="qrImg"></div>
+    <div class="qr-hint" id="qrHint">スマホのカメラでよみとってね！</div>
+  </div>
+  <button class="qr-close" onclick="document.getElementById('qrModal').classList.add('hidden')">とじる</button>
+</div>
+
+<div class="title-bar">
+  <div class="title-text">🌟 カリスマックス タイマー</div>
+  <div class="title-right">
+    <button class="qr-btn" id="musicBtn" onclick="manualPlayMusic()">🎵</button>
+    <button class="qr-btn" onclick="shareApp()">📱</button>
+  </div>
+</div>
+
+<div class="countdown-overlay hidden" id="countdownOverlay">
+  <div class="countdown-text">🌟 じゅんびはいい？</div>
+  <div class="countdown-num" id="countdownNum">3</div>
+</div>
+
+<div class="finish-screen" id="finishScreen">
+  <div class="finish-emoji">🌟</div>
+  <div class="finish-title">さいこうだったよ！！</div>
+  <div class="finish-msg">カリスマックスで<br>からだをきたえたね！<br>きみはカリスマだ！✨</div>
+  <button class="finish-btn" onclick="resetTimer()">▶ もういちど</button>
+</div>
+
+<div class="main" id="mainArea">
+  <div class="song-progress-wrap">
+    <div class="song-progress-label">
+      <span>0:00</span><span id="songElapsed">0:00</span><span>3:14</span>
+    </div>
+    <div class="song-progress-bar"><div class="song-progress-fill" id="songFill"></div></div>
+  </div>
+
+  <div class="circle-wrap">
+    <svg class="circle-svg" viewBox="0 0 180 180">
+      <circle class="circle-track" cx="90" cy="90" r="80"/>
+      <circle class="circle-progress" id="circleProgress" cx="90" cy="90" r="80"/>
+    </svg>
+    <div class="circle-center">
+      <div class="time-display" id="timeDisplay">20</div>
+      <div class="time-label">びょう</div>
+    </div>
+  </div>
+
+  <div class="exercise-part" id="exercisePart">じゅんび</div>
+  <div class="exercise-name" id="exerciseName">からだをほぐそう！</div>
+  <div class="pose-wrap"><div id="poseIllustration"></div></div>
+  <div class="exercise-tip" id="exerciseTip"></div>
+
+  <div class="next-wrap" id="nextWrap">
+    <div class="next-label">つぎ →</div>
+    <div class="next-name" id="nextName"></div>
+  </div>
+
+  <div class="exercise-list" id="exerciseList"></div>
+  <button class="main-btn" id="mainBtn" onclick="toggleTimer()">▶ すたーと</button>
+</div>
+
+<script>
+// ===== 音声 =====
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function unlockAudio() {
+  try {
+    const ctx = getAudioCtx();
+    const buf = ctx.createBuffer(1,1,22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.connect(ctx.destination); src.start(0); ctx.resume();
+  } catch(e) {}
+}
+function playBeep(freq, dur, vol=0.9) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+function beepWarning() { playBeep(880, 0.15, 0.9); }
+function beepChange() { playBeep(1047, 0.1, 1.0); setTimeout(() => playBeep(1319, 0.3, 1.0), 90); }
+
+// ===== YouTube =====
+var ytPlayer = null, ytReady = false;
+(function(){ var t = document.createElement('script'); t.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(t); })();
+window.onYouTubeIframeAPIReady = function() {
+  ytPlayer = new YT.Player('yt-container', {
+    videoId: 'tNrNzF6xVN8', height:'1', width:'1',
+    playerVars: { autoplay:0, controls:0, rel:0, playsinline:1 },
+    events: { onReady: function() { ytReady = true; } }
+  });
+};
+
+// ===== どうぶつSVG =====
+const svgs = {
+  rabbit: `<svg viewBox="0 0 120 120" width="110" height="110" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="42" cy="25" rx="8" ry="22" fill="#fce4ec" stroke="#f48fb1" stroke-width="2"/>
+    <ellipse cx="42" cy="25" rx="5" ry="17" fill="#f8bbd0"/>
+    <ellipse cx="78" cy="25" rx="8" ry="22" fill="#fce4ec" stroke="#f48fb1" stroke-width="2"/>
+    <ellipse cx="78" cy="25" rx="5" ry="17" fill="#f8bbd0"/>
+    <circle cx="60" cy="55" r="23" fill="#fff8f8" stroke="#f48fb1" stroke-width="2"/>
+    <ellipse cx="60" cy="80" rx="28" ry="24" fill="#fff8f8" stroke="#f48fb1" stroke-width="2"/>
+    <circle cx="52" cy="53" r="4.5" fill="#222"/>
+    <circle cx="68" cy="53" r="4.5" fill="#222"/>
+    <circle cx="53" cy="52" r="1.5" fill="#fff"/>
+    <circle cx="69" cy="52" r="1.5" fill="#fff"/>
+    <ellipse cx="60" cy="59" rx="3" ry="2.5" fill="#ff8fab"/>
+    <path d="M55 63 Q60 68 65 63" fill="none" stroke="#f48fb1" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="33" y1="76" x2="12" y2="62" stroke="#f48fb1" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="11" cy="61" r="6" fill="#fff8f8" stroke="#f48fb1" stroke-width="2"/>
+    <line x1="87" y1="76" x2="108" y2="62" stroke="#f48fb1" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="109" cy="61" r="6" fill="#fff8f8" stroke="#f48fb1" stroke-width="2"/>
+    <ellipse cx="48" cy="102" rx="12" ry="8" fill="#fff8f8" stroke="#f48fb1" stroke-width="2"/>
+    <ellipse cx="72" cy="102" rx="12" ry="8" fill="#fff8f8" stroke="#f48fb1" stroke-width="2"/>
+    <text x="60" y="118" text-anchor="middle" fill="#f48fb1" font-size="9" font-weight="bold">からだをほぐそう！</text>
+  </svg>`,
+
+  bear: `<svg viewBox="0 0 160 95" width="145" height="86" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="78" x2="155" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <circle cx="22" cy="46" r="19" fill="#d4870a" stroke="#a0600a" stroke-width="2"/>
+    <circle cx="11" cy="30" r="8" fill="#d4870a" stroke="#a0600a" stroke-width="2"/>
+    <circle cx="11" cy="30" r="5" fill="#f0a840"/>
+    <circle cx="33" cy="30" r="8" fill="#d4870a" stroke="#a0600a" stroke-width="2"/>
+    <circle cx="33" cy="30" r="5" fill="#f0a840"/>
+    <ellipse cx="22" cy="53" rx="9" ry="7" fill="#f0c070"/>
+    <circle cx="16" cy="45" r="3.5" fill="#222"/>
+    <circle cx="28" cy="45" r="3.5" fill="#222"/>
+    <circle cx="17" cy="44" r="1.2" fill="#fff"/>
+    <circle cx="29" cy="44" r="1.2" fill="#fff"/>
+    <ellipse cx="22" cy="51" rx="4" ry="3" fill="#7a3a00"/>
+    <ellipse cx="92" cy="60" rx="50" ry="17" fill="#d4870a" stroke="#a0600a" stroke-width="2"/>
+    <ellipse cx="92" cy="60" rx="32" ry="11" fill="#f0c090"/>
+    <line x1="40" y1="58" x2="58" y2="75" stroke="#a0600a" stroke-width="6" stroke-linecap="round"/>
+    <line x1="58" y1="75" x2="72" y2="75" stroke="#a0600a" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="73" cy="75" r="7" fill="#d4870a" stroke="#a0600a" stroke-width="1.5"/>
+    <line x1="144" y1="58" x2="126" y2="75" stroke="#a0600a" stroke-width="6" stroke-linecap="round"/>
+    <line x1="126" y1="75" x2="112" y2="75" stroke="#a0600a" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="111" cy="75" r="7" fill="#d4870a" stroke="#a0600a" stroke-width="1.5"/>
+    <text x="82" y="92" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="bold">うでをまげてのばす！</text>
+  </svg>`,
+
+  cat: `<svg viewBox="0 0 160 95" width="145" height="86" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="78" x2="155" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <ellipse cx="80" cy="56" rx="56" ry="16" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
+    <ellipse cx="80" cy="56" rx="38" ry="10" fill="#ffb070"/>
+    <path d="M134 50 Q155 33 147 55" fill="none" stroke="#e07030" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="22" cy="48" r="19" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
+    <polygon points="10,36 6,22 20,31" fill="#ff8c42" stroke="#e07030" stroke-width="1.5"/>
+    <polygon points="34,36 38,22 24,31" fill="#ff8c42" stroke="#e07030" stroke-width="1.5"/>
+    <polygon points="11,34 8,24 19,30" fill="#ffb080"/>
+    <polygon points="33,34 36,24 25,30" fill="#ffb080"/>
+    <ellipse cx="16" cy="47" rx="3.5" ry="4" fill="#222"/>
+    <ellipse cx="28" cy="47" rx="3.5" ry="4" fill="#222"/>
+    <circle cx="17" cy="46" r="1.2" fill="#fff"/>
+    <circle cx="29" cy="46" r="1.2" fill="#fff"/>
+    <polygon points="22,52 20,55 24,55" fill="#ff6b9d"/>
+    <line x1="4" y1="51" x2="14" y2="52" stroke="#555" stroke-width="1"/>
+    <line x1="4" y1="54" x2="14" y2="54" stroke="#555" stroke-width="1"/>
+    <line x1="30" y1="52" x2="40" y2="51" stroke="#555" stroke-width="1"/>
+    <line x1="30" y1="54" x2="40" y2="54" stroke="#555" stroke-width="1"/>
+    <line x1="40" y1="63" x2="42" y2="78" stroke="#e07030" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="42" cy="78" r="6" fill="#ff8c42" stroke="#e07030" stroke-width="1.5"/>
+    <line x1="120" y1="63" x2="122" y2="78" stroke="#e07030" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="122" cy="78" r="6" fill="#ff8c42" stroke="#e07030" stroke-width="1.5"/>
+    <text x="80" y="92" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="bold">おなかをかたくして！</text>
+  </svg>`,
+
+  squirrel: `<svg viewBox="0 0 130 125" width="120" height="115" xmlns="http://www.w3.org/2000/svg">
+    <path d="M82 95 Q120 65 114 25 Q107 8 93 18 Q102 35 95 58 Q87 78 70 85 Z" fill="#c07818" stroke="#905010" stroke-width="1.5"/>
+    <path d="M81 93 Q117 63 112 27 Q106 11 95 20 Q102 36 95 57 Q87 76 72 84 Z" fill="#e8a040"/>
+    <ellipse cx="55" cy="80" rx="24" ry="27" fill="#d4820e" stroke="#a06010" stroke-width="2"/>
+    <circle cx="55" cy="52" r="22" fill="#d4820e" stroke="#a06010" stroke-width="2"/>
+    <circle cx="42" cy="36" r="8" fill="#d4820e" stroke="#a06010" stroke-width="2"/>
+    <circle cx="42" cy="36" r="4.5" fill="#f0b050"/>
+    <circle cx="68" cy="36" r="8" fill="#d4820e" stroke="#a06010" stroke-width="2"/>
+    <circle cx="68" cy="36" r="4.5" fill="#f0b050"/>
+    <circle cx="48" cy="51" r="4.5" fill="#222"/>
+    <circle cx="62" cy="51" r="4.5" fill="#222"/>
+    <circle cx="49" cy="50" r="1.5" fill="#fff"/>
+    <circle cx="63" cy="50" r="1.5" fill="#fff"/>
+    <ellipse cx="55" cy="57" rx="3.5" ry="2.5" fill="#a06010"/>
+    <path d="M50 62 Q55 67 60 62" fill="none" stroke="#a06010" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="32" y1="74" x2="12" y2="55" stroke="#a06010" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="11" cy="54" r="7" fill="#d4820e" stroke="#a06010" stroke-width="1.5"/>
+    <line x1="78" y1="74" x2="98" y2="55" stroke="#a06010" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="99" cy="54" r="7" fill="#d4820e" stroke="#a06010" stroke-width="1.5"/>
+    <line x1="44" y1="103" x2="36" y2="118" stroke="#a06010" stroke-width="5" stroke-linecap="round"/>
+    <line x1="66" y1="103" x2="74" y2="118" stroke="#a06010" stroke-width="5" stroke-linecap="round"/>
+    <path d="M8 42 Q18 30 28 42" fill="none" stroke="#ffd700" stroke-width="2.5" stroke-dasharray="3,2"/>
+    <path d="M82 42 Q92 30 102 42" fill="none" stroke="#ffd700" stroke-width="2.5" stroke-dasharray="3,2"/>
+    <text x="60" y="125" text-anchor="middle" fill="#ffd700" font-size="9" font-weight="bold">くるりんジャンプ！</text>
+  </svg>`,
+
+  frog: `<svg viewBox="0 0 165 112" width="150" height="102" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="92" x2="160" y2="92" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <ellipse cx="65" cy="70" rx="32" ry="28" fill="#4caf50" stroke="#2e7d32" stroke-width="2.5"/>
+    <ellipse cx="65" cy="74" rx="22" ry="18" fill="#a5d6a7"/>
+    <ellipse cx="65" cy="44" rx="28" ry="22" fill="#4caf50" stroke="#2e7d32" stroke-width="2.5"/>
+    <circle cx="50" cy="34" r="13" fill="#fff" stroke="#2e7d32" stroke-width="2"/>
+    <circle cx="80" cy="34" r="13" fill="#fff" stroke="#2e7d32" stroke-width="2"/>
+    <circle cx="50" cy="35" r="8" fill="#333"/>
+    <circle cx="80" cy="35" r="8" fill="#333"/>
+    <circle cx="52" cy="33" r="2.5" fill="#fff"/>
+    <circle cx="82" cy="33" r="2.5" fill="#fff"/>
+    <path d="M55 54 Q65 62 75 54" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="33" y1="67" x2="16" y2="78" stroke="#2e7d32" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="14" cy="79" r="8" fill="#4caf50" stroke="#2e7d32" stroke-width="1.5"/>
+    <line x1="92" y1="76" x2="135" y2="65" stroke="#2e7d32" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="138" cy="64" r="9" fill="#4caf50" stroke="#2e7d32" stroke-width="1.5"/>
+    <line x1="50" y1="94" x2="40" y2="108" stroke="#2e7d32" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="38" cy="108" rx="9" ry="5" fill="#4caf50" stroke="#2e7d32" stroke-width="1.5"/>
+    <line x1="143" y1="60" x2="154" y2="54" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="145" y1="65" x2="157" y2="65" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="143" y1="70" x2="154" y2="77" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="80" y="108" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="bold">キック！15かい！</text>
+  </svg>`,
+
+  pandaPrep: `<svg viewBox="0 0 120 125" width="110" height="115" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="60" cy="85" rx="30" ry="25" fill="#fff" stroke="#ccc" stroke-width="2"/>
+    <circle cx="60" cy="52" r="25" fill="#fff" stroke="#ccc" stroke-width="2"/>
+    <circle cx="40" cy="32" r="12" fill="#333"/>
+    <circle cx="80" cy="32" r="12" fill="#333"/>
+    <circle cx="40" cy="32" r="6" fill="#555"/>
+    <circle cx="80" cy="32" r="6" fill="#555"/>
+    <ellipse cx="50" cy="51" rx="10" ry="9" fill="#333"/>
+    <ellipse cx="70" cy="51" rx="10" ry="9" fill="#333"/>
+    <circle cx="50" cy="51" r="5.5" fill="#fff"/>
+    <circle cx="70" cy="51" r="5.5" fill="#fff"/>
+    <circle cx="51" cy="50" r="3.5" fill="#222"/>
+    <circle cx="71" cy="50" r="3.5" fill="#222"/>
+    <circle cx="52" cy="49" r="1.2" fill="#fff"/>
+    <circle cx="72" cy="49" r="1.2" fill="#fff"/>
+    <ellipse cx="60" cy="59" rx="4.5" ry="3.5" fill="#333"/>
+    <path d="M55 64 Q60 69 65 64" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="30" y1="82" x2="14" y2="64" stroke="#ccc" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="13" cy="63" r="7" fill="#fff" stroke="#ccc" stroke-width="2"/>
+    <line x1="90" y1="82" x2="106" y2="64" stroke="#ccc" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="107" cy="63" r="7" fill="#fff" stroke="#ccc" stroke-width="2"/>
+    <line x1="46" y1="107" x2="38" y2="120" stroke="#ccc" stroke-width="5" stroke-linecap="round"/>
+    <line x1="74" y1="107" x2="82" y2="120" stroke="#ccc" stroke-width="5" stroke-linecap="round"/>
+    <text x="60" y="125" text-anchor="middle" fill="#ffd700" font-size="8" font-weight="bold">はいきん・ふっきんじゅんび！</text>
+  </svg>`,
+
+  pandaBack: `<svg viewBox="0 0 165 95" width="150" height="86" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="80" x2="160" y2="80" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <path d="M32 75 Q58 40 95 32 Q125 30 140 56 Q143 67 134 75 Z" fill="#fff" stroke="#ddd" stroke-width="2"/>
+    <path d="M38 73 Q62 44 95 37 Q122 35 132 58 Q134 66 126 73 Z" fill="#f5f5f5"/>
+    <circle cx="23" cy="62" r="19" fill="#fff" stroke="#ddd" stroke-width="2"/>
+    <circle cx="12" cy="46" r="9" fill="#333"/>
+    <circle cx="34" cy="46" r="9" fill="#333"/>
+    <circle cx="12" cy="46" r="4.5" fill="#555"/>
+    <circle cx="34" cy="46" r="4.5" fill="#555"/>
+    <ellipse cx="17" cy="61" rx="7" ry="6.5" fill="#333"/>
+    <ellipse cx="29" cy="61" rx="7" ry="6.5" fill="#333"/>
+    <circle cx="17" cy="61" r="4" fill="#fff"/>
+    <circle cx="29" cy="61" r="4" fill="#fff"/>
+    <circle cx="18" cy="60" r="2.5" fill="#222"/>
+    <circle cx="30" cy="60" r="2.5" fill="#222"/>
+    <line x1="40" y1="72" x2="54" y2="80" stroke="#ccc" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="55" cy="80" r="6" fill="#fff" stroke="#ddd" stroke-width="1.5"/>
+    <line x1="92" y1="46" x2="92" y2="26" stroke="#ffd700" stroke-width="3" stroke-linecap="round"/>
+    <polygon points="92,20 86,28 98,28" fill="#ffd700"/>
+    <text x="85" y="92" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="bold">うえをむいてのばす！</text>
+  </svg>`,
+
+  hamster: `<svg viewBox="0 0 130 128" width="118" height="116" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="118" x2="125" y2="118" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <ellipse cx="65" cy="86" rx="36" ry="28" fill="#f5c870" stroke="#d4a030" stroke-width="2.5"/>
+    <ellipse cx="40" cy="88" rx="13" ry="11" fill="#ffb3b3" opacity="0.55"/>
+    <ellipse cx="90" cy="88" rx="13" ry="11" fill="#ffb3b3" opacity="0.55"/>
+    <circle cx="65" cy="55" r="27" fill="#f5c870" stroke="#d4a030" stroke-width="2.5"/>
+    <circle cx="44" cy="34" r="10" fill="#f5c870" stroke="#d4a030" stroke-width="2"/>
+    <circle cx="44" cy="34" r="5.5" fill="#ffb3c0"/>
+    <circle cx="86" cy="34" r="10" fill="#f5c870" stroke="#d4a030" stroke-width="2"/>
+    <circle cx="86" cy="34" r="5.5" fill="#ffb3c0"/>
+    <circle cx="57" cy="54" r="5.5" fill="#222"/>
+    <circle cx="73" cy="54" r="5.5" fill="#222"/>
+    <circle cx="58" cy="53" r="2" fill="#fff"/>
+    <circle cx="74" cy="53" r="2" fill="#fff"/>
+    <ellipse cx="65" cy="61" rx="4.5" ry="3.5" fill="#ff8fab"/>
+    <path d="M58 67 Q65 73 72 67" fill="none" stroke="#d4a030" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="30" y1="84" x2="14" y2="62" stroke="#d4a030" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="13" cy="60" r="8" fill="#f5c870" stroke="#d4a030" stroke-width="1.5"/>
+    <line x1="100" y1="84" x2="116" y2="62" stroke="#d4a030" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="117" cy="60" r="8" fill="#f5c870" stroke="#d4a030" stroke-width="1.5"/>
+    <line x1="50" y1="111" x2="40" y2="123" stroke="#d4a030" stroke-width="5" stroke-linecap="round"/>
+    <line x1="80" y1="111" x2="90" y2="123" stroke="#d4a030" stroke-width="5" stroke-linecap="round"/>
+    <text x="65" y="128" text-anchor="middle" fill="#ffd700" font-size="9" font-weight="bold">おきあがれ！ふっきん！</text>
+  </svg>`,
+
+  catBridge: `<svg viewBox="0 0 160 95" width="145" height="86" xmlns="http://www.w3.org/2000/svg">
+    <line x1="5" y1="82" x2="155" y2="82" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <path d="M25 80 Q45 36 80 28 Q115 36 135 80 Z" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
+    <path d="M35 77 Q54 42 80 35 Q106 42 125 77" fill="none" stroke="#e07030" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="80" cy="25" r="17" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
+    <polygon points="67,16 63,4 76,12" fill="#ff8c42" stroke="#e07030" stroke-width="1.5"/>
+    <polygon points="93,16 97,4 84,12" fill="#ff8c42" stroke="#e07030" stroke-width="1.5"/>
+    <polygon points="68,14 65,6 75,11" fill="#ffb080"/>
+    <polygon points="92,14 95,6 85,11" fill="#ffb080"/>
+    <path d="M135 77 Q155 62 148 82" fill="none" stroke="#e07030" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="74" cy="24" rx="3.5" ry="4" fill="#222"/>
+    <ellipse cx="86" cy="24" rx="3.5" ry="4" fill="#222"/>
+    <circle cx="75" cy="23" r="1.2" fill="#fff"/>
+    <circle cx="87" cy="23" r="1.2" fill="#fff"/>
+    <polygon points="80,28 78,32 82,32" fill="#ff6b9d"/>
+    <circle cx="25" cy="81" r="8" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
+    <circle cx="135" cy="81" r="8" fill="#ff8c42" stroke="#e07030" stroke-width="2"/>
+    <line x1="80" y1="42" x2="80" y2="26" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>
+    <polygon points="80,20 75,27 85,27" fill="#ffd700"/>
+    <text x="80" y="93" text-anchor="middle" fill="#ffd700" font-size="10" font-weight="bold">おしりをあげる！</text>
+  </svg>`,
+};
+
+// ===== 種目データ (合計194秒) =====
+const exercises = [
+  { part:'じゅんび', name:'からだをほぐそう！',
+    tip:'うでをおおきくまわして\nからだをほぐそう！',
+    duration:20, color:'#00d4aa', svg:svgs.rabbit },
+  { part:'Aめろ', name:'うでたてふせ',
+    tip:'からだをまっすぐに！\nうでをまげてのばす！',
+    duration:25, color:'#ff6b9d', svg:svgs.bear },
+  { part:'Bめろ', name:'ひじプランク',
+    tip:'おなかをかたくして！\nおしりをあげないよ！',
+    duration:30, color:'#ff8c42', svg:svgs.cat },
+  { part:'🔥さび', name:'くるりんジャンプ',
+    tip:'しこだちからジャンプして\nはんかいてん！8かい！',
+    duration:25, color:'#ffd700', svg:svgs.squirrel },
+  { part:'へんか', name:'スクワットキック',
+    tip:'しゃがんでたって\nキック！15かい！',
+    duration:25, color:'#4caf50', svg:svgs.frog },
+  { part:'じゅんび2', name:'はいきん・ふっきんのじゅんび',
+    tip:'まっすぐたって\nからだをのばそう！',
+    duration:15, color:'#9c27b0', svg:svgs.pandaPrep },
+  { part:'🔥さび2', name:'はいきん',
+    tip:'うつぶせで\nゆっくりうえをむく！',
+    duration:25, color:'#2196f3', svg:svgs.pandaBack },
+  { part:'アウトロ', name:'ふっきん',
+    tip:'ひざをまげて\nゆっくりおきあがる！',
+    duration:20, color:'#ff9800', svg:svgs.hamster },
+  { part:'さいご', name:'ブリッジ',
+    tip:'あおむけでひざをまげて\nおしりをうえにあげる！',
+    duration:9, color:'#ffd700', svg:svgs.catBridge },
+];
+// 合計: 20+25+30+25+25+15+25+20+9 = 194秒 ✓
+
+const TOTAL_SONG = 194;
+const CIRCUMFERENCE = 503;
+let currentIndex = 0, remaining = exercises[0].duration;
+let running = false, interval = null, elapsed = 0, isFinished = false;
+
+function updateUI() {
+  const ex = exercises[currentIndex];
+  const next = exercises[currentIndex + 1];
+  document.getElementById('exercisePart').textContent = ex.part;
+  document.getElementById('exerciseName').textContent = ex.name;
+  document.getElementById('exerciseTip').innerHTML = ex.tip.replace('\n','<br>');
+  document.getElementById('timeDisplay').textContent = remaining;
+  document.getElementById('poseIllustration').innerHTML = ex.svg;
+  const offset = CIRCUMFERENCE * (1 - remaining / ex.duration);
+  document.getElementById('circleProgress').style.strokeDashoffset = offset;
+  document.getElementById('circleProgress').style.stroke = ex.color;
+  const totalElapsed = exercises.slice(0,currentIndex).reduce((s,e)=>s+e.duration,0) + (ex.duration - remaining);
+  document.getElementById('songFill').style.width = (totalElapsed/TOTAL_SONG*100) + '%';
+  const m = Math.floor(totalElapsed/60), s = totalElapsed%60;
+  document.getElementById('songElapsed').textContent = `${m}:${String(s).padStart(2,'0')}`;
+  const bg = document.getElementById('bgGlow');
+  if (ex.color==='#ffd700') bg.className='bg-glow finish';
+  else if (ex.color==='#00d4aa'||ex.color==='#9c27b0') bg.className='bg-glow rest';
+  else bg.className='bg-glow active';
+  const nw = document.getElementById('nextWrap');
+  if (next) { document.getElementById('nextName').textContent=next.name; nw.style.display='flex'; }
+  else { nw.style.display='none'; }
+  document.getElementById('exerciseList').innerHTML = exercises.map((e,i)=>`
+    <div class="ex-item ${i<currentIndex?'done':i===currentIndex?'current':''}">
+      <div class="ex-dot" style="background:${e.color}"></div>
+      <span>${e.name}（${e.duration}びょう）</span>
+    </div>`).join('');
+}
+
+function tick() {
+  if (remaining > 1) {
+    remaining--; elapsed++;
+    if (remaining <= 3) beepWarning();
+    updateUI();
+  } else {
+    beepChange(); triggerFlash();
+    if (currentIndex < exercises.length-1) {
+      currentIndex++; remaining = exercises[currentIndex].duration; elapsed++;
+      updateUI();
+    } else {
+      clearInterval(interval); running = false; showFinish();
+    }
+  }
+}
+
+function triggerFlash() {
+  const f = document.getElementById('flash');
+  f.className='flash go'; setTimeout(()=>f.className='flash',350);
+}
+
+function toggleTimer() {
+  unlockAudio();
+  if (isFinished) { resetTimer(); return; }
+  if (!running) {
+    if (ytPlayer&&ytReady) { try { ytPlayer.mute(); ytPlayer.seekTo(0); ytPlayer.playVideo(); } catch(e){} }
+    if (elapsed===0&&currentIndex===0) startCountdown();
+    else resumeTimer();
+  } else {
+    clearInterval(interval); running=false;
+    if (ytPlayer&&ytReady) ytPlayer.pauseVideo();
+    document.getElementById('mainBtn').textContent='▶ つづける';
+  }
+}
+
+function resumeTimer() {
+  running=true; document.getElementById('mainBtn').textContent='⏸ とめる';
+  if (ytPlayer&&ytReady) ytPlayer.playVideo();
+  interval=setInterval(tick,1000);
+}
+
+function startCountdown() {
+  const ov=document.getElementById('countdownOverlay'), numEl=document.getElementById('countdownNum');
+  ov.classList.remove('hidden'); let count=3; numEl.textContent=count; beepWarning();
+  const cd=setInterval(()=>{
+    count--;
+    if (count>0) {
+      numEl.style.animation='none'; void numEl.offsetHeight;
+      numEl.style.animation='countPop 1s ease'; numEl.textContent=count; beepWarning();
+    } else {
+      clearInterval(cd); numEl.style.animation='none'; void numEl.offsetHeight;
+      numEl.style.animation='countPop 0.5s ease'; numEl.textContent='GO!'; beepChange();
+      setTimeout(()=>{ ov.classList.add('hidden'); startTimer(); },600);
+    }
+  },1000);
+}
+
+function startTimer() {
+  running=true; document.getElementById('mainBtn').textContent='⏸ とめる';
+  if (ytPlayer&&ytReady) { ytPlayer.seekTo(0); ytPlayer.unMute(); ytPlayer.setVolume(100); }
+  interval=setInterval(tick,1000);
+}
+
+function resetTimer() {
+  clearInterval(interval); running=false; isFinished=false;
+  if (ytPlayer&&ytReady) { ytPlayer.seekTo(0); ytPlayer.pauseVideo(); }
+  currentIndex=0; remaining=exercises[0].duration; elapsed=0;
+  document.getElementById('mainBtn').textContent='▶ すたーと';
+  document.getElementById('mainArea').style.display='flex';
+  document.getElementById('finishScreen').classList.remove('show');
+  document.getElementById('bgGlow').className='bg-glow';
+  document.getElementById('countdownOverlay').classList.add('hidden');
+  updateUI();
+}
+
+function showFinish() {
+  isFinished=true;
+  document.getElementById('mainArea').style.display='none';
+  document.getElementById('finishScreen').classList.add('show');
+  document.getElementById('bgGlow').className='bg-glow finish';
+  if (ytPlayer&&ytReady) ytPlayer.pauseVideo();
+}
+
+function manualPlayMusic() {
+  unlockAudio();
+  if (ytPlayer&&ytReady) {
+    try { ytPlayer.unMute(); ytPlayer.setVolume(100); ytPlayer.playVideo();
+      document.getElementById('musicBtn').textContent='🔊';
+      setTimeout(()=>document.getElementById('musicBtn').textContent='🎵',2000);
+    } catch(e){}
+  }
+}
+
+function shareApp() {
+  const url='https://eeiweeiweeiw-blip.github.io/karismax-timer/';
+  if (navigator.share) navigator.share({title:'カリスマックス タイマー',text:'空手の筋トレタイマー！',url});
+  else document.getElementById('qrModal').classList.remove('hidden');
+}
+
+updateUI();
+if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
