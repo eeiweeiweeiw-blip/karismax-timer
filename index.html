@@ -109,7 +109,7 @@
 <div class="main" id="mainArea">
   <div class="song-progress-wrap">
     <div class="song-progress-label">
-      <span>0:00</span><span id="songElapsed">0:00</span><span>3:14</span>
+      <span>0:00</span><span id="songElapsed">0:00</span><span>2:53</span>
     </div>
     <div class="song-progress-bar"><div class="song-progress-fill" id="songFill"></div></div>
   </div>
@@ -403,37 +403,34 @@ const svgs = {
 
 // ===== 種目データ (合計194秒) =====
 const exercises = [
-  { part:'じゅんび', name:'からだをほぐそう！',
+  { part:'じゅんび（0〜18）', name:'からだをほぐそう！',
     tip:'うでをおおきくまわして\nからだをほぐそう！',
-    duration:20, color:'#00d4aa', svg:svgs.rabbit },
-  { part:'Aめろ', name:'うでたてふせ',
-    tip:'からだをまっすぐに！\nうでをまげてのばす！',
-    duration:25, color:'#ff6b9d', svg:svgs.bear },
-  { part:'Bめろ', name:'ひじプランク',
+    duration:18, color:'#00d4aa', svg:svgs.rabbit },
+  { part:'🔥プランク（18〜43）', name:'ひじプランク',
     tip:'おなかをかたくして！\nおしりをあげないよ！',
-    duration:30, color:'#ff8c42', svg:svgs.cat },
-  { part:'🔥さび', name:'くるりんジャンプ',
-    tip:'しこだちからジャンプして\nはんかいてん！8かい！',
-    duration:25, color:'#ffd700', svg:svgs.squirrel },
-  { part:'へんか', name:'スクワットキック',
+    duration:25, color:'#ff8c42', svg:svgs.cat },
+  { part:'くるりん（43〜67）', name:'くるりんジャンプ',
+    tip:'しこだちからジャンプして\nはんかいてん！10かい！',
+    duration:24, color:'#ffd700', svg:svgs.squirrel },
+  { part:'キック（67〜94）', name:'スクワットキック',
     tip:'しゃがんでたって\nキック！15かい！',
-    duration:25, color:'#4caf50', svg:svgs.frog },
-  { part:'じゅんび2', name:'はいきん・ふっきんのじゅんび',
+    duration:27, color:'#4caf50', svg:svgs.frog },
+  { part:'じゅんび（94〜106）', name:'はいきん・ふっきんのじゅんび',
     tip:'まっすぐたって\nからだをのばそう！',
-    duration:15, color:'#9c27b0', svg:svgs.pandaPrep },
-  { part:'🔥さび2', name:'はいきん',
+    duration:12, color:'#9c27b0', svg:svgs.pandaPrep },
+  { part:'🔥はいきん（106〜134）', name:'はいきん',
     tip:'うつぶせで\nゆっくりうえをむく！',
-    duration:25, color:'#2196f3', svg:svgs.pandaBack },
-  { part:'アウトロ', name:'ふっきん',
+    duration:28, color:'#2196f3', svg:svgs.pandaBack },
+  { part:'ふっきん（134〜158）', name:'ふっきん',
     tip:'ひざをまげて\nゆっくりおきあがる！',
-    duration:20, color:'#ff9800', svg:svgs.hamster },
-  { part:'さいご', name:'ブリッジ',
+    duration:24, color:'#ff9800', svg:svgs.hamster },
+  { part:'さいご（158〜173）', name:'ブリッジ',
     tip:'あおむけでひざをまげて\nおしりをうえにあげる！',
-    duration:9, color:'#ffd700', svg:svgs.catBridge },
+    duration:15, color:'#ffd700', svg:svgs.catBridge },
 ];
-// 合計: 20+25+30+25+25+15+25+20+9 = 194秒 ✓
+// 合計: 18+25+24+27+12+28+24+15 = 173秒 ✓
 
-const TOTAL_SONG = 194;
+const TOTAL_SONG = 173;
 const CIRCUMFERENCE = 503;
 let currentIndex = 0, remaining = exercises[0].duration;
 let running = false, interval = null, elapsed = 0, isFinished = false;
