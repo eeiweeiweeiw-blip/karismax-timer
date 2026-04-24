@@ -43,13 +43,13 @@
     .circle-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
     .time-display { font-size:52px; font-weight:900; line-height:1; color:#fff; }
     .time-label { font-size:11px; color:#888; margin-top:2px; }
-    .exercise-part { font-size:11px; color:#ffd700; font-weight:700; letter-spacing:2px; }
-    .exercise-name { font-size:26px; font-weight:900; text-align:center; line-height:1.2; }
-    .exercise-tip { font-size:13px; color:rgba(255,255,255,0.65); text-align:center; line-height:1.6; min-height:40px; }
+    .exercise-part { font-size:12px; color:#ffd700; font-weight:700; letter-spacing:2px; }
+    .exercise-name { font-size:34px; font-weight:900; text-align:center; line-height:1.2; }
+    .exercise-tip { font-size:15px; color:rgba(255,255,255,0.75); text-align:center; line-height:1.6; min-height:40px; }
     .pose-wrap { width:100%; background:rgba(255,255,255,0.04); border-radius:16px; padding:16px; display:flex; justify-content:center; align-items:center; min-height:120px; }
-    .next-wrap { width:100%; background:rgba(255,255,255,0.04); border-radius:12px; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; }
-    .next-label { font-size:11px; color:#888; }
-    .next-name { font-size:14px; font-weight:700; color:#fff; }
+    .next-wrap { width:100%; background:rgba(255,255,255,0.04); border-radius:12px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+    .next-label { font-size:14px; color:#aaa; }
+    .next-name { font-size:20px; font-weight:700; color:#fff; }
     .exercise-list { width:100%; display:flex; flex-direction:column; gap:3px; }
     .ex-item { display:flex; align-items:center; gap:8px; padding:5px 10px; border-radius:8px; font-size:12px; opacity:0.45; transition:opacity 0.3s,background 0.3s; }
     .ex-item.done { opacity:0.25; text-decoration:line-through; }
@@ -168,7 +168,19 @@ function playBeep(freq, dur, vol=0.9) {
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + dur);
   } catch(e) {}
 }
-function beepWarning() { playBeep(880, 0.15, 0.9); }
+function beepWarning() {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'square';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.6, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.18);
+  } catch(e) {}
+}
 function beepChange() { playBeep(1047, 0.1, 1.0); setTimeout(() => playBeep(1319, 0.3, 1.0), 90); }
 
 // ===== YouTube =====
@@ -518,7 +530,7 @@ function updateUI() {
 function tick() {
   if (remaining > 1) {
     remaining--; elapsed++;
-    if (remaining <= 3) beepWarning();
+    if (remaining <= 5) beepWarning();
     updateUI();
   } else {
     beepChange(); triggerFlash();
